@@ -1,22 +1,29 @@
+# Library imported to use regular expressions
 import re
 
-#ID = re.findall([a-zA-Z])
-#num = re.findall([0-9])
-state = 0
+"""
+    The lexical analysis class is the first phase in the compilation process.
+    It takes a character stream that pass through the analyzer and returns
+    a token stream for all the lexemes (delimiters, keywords, numbers and variables)
+    found in the character stream.
+"""
 
 class lexAnalysis:
-    # Se inicializan aquí porque es el analizador léxico y porque eso no cambia
-    # a diferencia de las variables las cuales conforme se crean, se guardan.
-    def __init__(self):
-        # Ordenados por ASCII
-        # https://www.ascii-code.com/
-        self.delimiters = [' ', '!', '(', ')', '*', '+', ',', '-', '/',
-                            ';', '<', '=', '>', '[', ']', '{', '}']
-        self.keywords = ['else', 'if', 'input', 'int', 'output', 'return', 'void', 'while'] 
 
-    # https://www.geeksforgeeks.org/binary-search/
-    # The array used must be sorted from smallest to longest
-    def binarySearch (self, arr, l, r, x):
+    # Initialize the arrays
+    def __init__(self):
+        self.symbolTable = []
+        self.errors = []
+        self.varTable = []
+        self.numTable = []
+        self.delimiters = [' ', '!=', '(', ')', '*', '+', ',', '-', '/',
+                            ';', '<', '=', '>', '[', ']', '{', '}']
+        self.keywords = ['else', 'if', 'input', 'int', 'output', 'return', 'void', 'while']
+
+    # Function to traverse through the arrays
+    # The array values must be in order
+    # From the lowest to the highest
+    def binarySearch(self, arr, l, r, x):
         if r >= l:
             mid = l + (r - l) // 2
     
@@ -29,25 +36,58 @@ class lexAnalysis:
         else:
             return -1
 
-    # Hacer que sirva para los keywords y los delimitadores separarlos por tipo, tal vez un if 
-    def test_regex(self, words):
-        nKey = len(self.keywords)
-        nDel = len(self.delimiters)
+    # Function which takes the content in the file
+    # and classifies it.
+    def analizer(self, phrase):
+        each = 0
+        comm = False
+        n_key = len(self.keywords)
+        n_del = len(self.delimiters)
 
-        result = self.binarySearch(self.keywords, 0, nKey-1, words)
-        result2 = self.binarySearch(self.delimiters, 0, nDel-1, words)
-        
-        if result != -1:
-            print ("Element is present at index %d" % result)
-        elif result2 != -1:
-            print ("Element is present at index %d" % result2)
-        else:
-            print ("Element is not present in array")
+        # It traverse each of the words from the main input file
+        for each in phrase:
 
+            # Regular expressions are used to classify each word
+            num = re.search(r'[0-9]', each)
+            letter = re.search(r'[a-zA-Z]', each)
 
-if __name__ == "__main__":
-    print("A ver escribe algo")
-    word = input()
-    lexAnalysis().test_regex(word)
-    #print(lexAnalysis().main_analysis(1))
+            # Since delimiters and keywords are already known by the 
+            # compiler, a binary search is made to look for a certain
+            # symbol or word
+            result = self.binarySearch(self.keywords, 0, n_key-1, each)
+            result2 = self.binarySearch(self.delimiters, 0, n_del-1, each)
+
+            # According to each data type, it is stored in their respective
+            # array, also comm is used in case there is a comment
+            if num and comm == False:
+                self.numTable.append("num," + each)
+            elif result != -1 and comm == False:
+                self.symbolTable.append(each)
+            elif result2 != -1 and comm == False:
+                self.symbolTable.append(each)
+            elif letter and comm == False:
+                self.varTable.append("id," + each)
+            elif each == '/*':
+                comm = True
+            elif comm == True:
+                pass
+            elif each == '*/':
+                comm = False
+            else:
+                self.errors.append(each)
+                print("Error in " + each + "\n")
+
+        # The varTable and the numTable are extended to the 
+        # symbolTable to form a single array
+        self.symbolTable.extend(self.varTable + self.numTable)
+
+        print("Symbol table: ")
+        for n in self.symbolTable:
+            print("<" + str(n) + ">", end=" ")
+        print("\n")
+
+        print("\nError list: ")
+        for n in self.errors:
+            print("<" + str(n) + ">")
+        print("\n")
 
